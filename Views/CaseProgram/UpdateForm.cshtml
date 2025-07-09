@@ -1,0 +1,58 @@
+﻿@model Counselor_Active_CaseLoad_Transfer.Models.CounselorUpdateModel
+@{
+    ViewData["Title"] = "Update Counselor";
+    var counselors = ViewBag.Counselors as List<SelectListItem> ?? new List<SelectListItem>();
+    var programs = ViewBag.ProgramTypes as List<SelectListItem> ?? new List<SelectListItem>();
+    var languages = ViewBag.Languages as List<SelectListItem> ?? new List<SelectListItem>();
+}
+
+<h2>Update Counselor</h2>
+<form asp-action="ReplaceCounselor" asp-controller="CaseProgram" method="post">
+    <div class="form-group">
+        <label asp-for="CounselorIn">Counselor In</label>
+        <select asp-for="CounselorIn" asp-items="@counselors" class="form-control"></select>
+    </div>
+    <div class="form-group">
+        <label asp-for="CounselorOut">Counselor Out</label>
+        <select asp-for="CounselorOut" asp-items="@counselors" class="form-control"></select>
+    </div>
+    <div class="form-group">
+        <label>Program Types</label>
+        <div>
+            <label><input type="checkbox" onclick="selectAllPrograms(this)" /> Select All</label><br />
+            @foreach (var item in programs)
+            {
+                <label>
+                    <input type="checkbox" name="ProgramTypes" value="@item.Value" class="program-checkbox" /> @item.Text
+                </label>
+            
+                <br />
+            }
+        </div>
+    </div>
+    <div class="form-group">
+        <label for="LanguageId">Languages</label>
+        <select asp-for="LanguageId" asp-items="@languages" class="form-control" multiple></select>
+    </div>
+    <button type="submit" class="btn btn-primary mt-3">Replace Counselor</button>
+</form>
+
+<script>
+    function selectAllPrograms(source) {
+        const checkboxes = document.querySelectorAll('.program-checkbox');
+        for (const box of checkboxes) {
+            box.checked = source.checked;
+        }
+    }
+</script>
+
+@if (ViewBag.Message != null)
+{
+    <div class="alert alert-success">@ViewBag.Message</div>
+    <div class="alert alert-info">
+        <strong>Counselor In:</strong> @ViewBag.CounselorInName<br />
+        <strong>Counselor Out:</strong> @ViewBag.CounselorOutName<br />
+        <strong>Programs:</strong> @ViewBag.ProgramSummary<br />
+        <strong>Languages:</strong> @ViewBag.LanguageSummary
+    </div>
+}
