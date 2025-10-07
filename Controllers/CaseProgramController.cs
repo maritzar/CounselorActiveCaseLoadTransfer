@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Data.SqlClient;
 
 namespace Counselor_Active_CaseLoad_Transfer.Controllers
 {
@@ -56,6 +57,9 @@ namespace Counselor_Active_CaseLoad_Transfer.Controllers
         [HttpPost]
         public async Task<IActionResult> ReplaceCounselor(CounselorUpdateModel request)
         {
+            if (!ModelState.IsValid)
+                return View("UpdateForm", request);
+
             var programCodeMap = _context.ProgramTypes
                 .Where(p => !string.IsNullOrEmpty(p.Code))
                 .ToDictionary(p => p.ProgramId.ToString(), p => p.Code);
@@ -66,12 +70,8 @@ namespace Counselor_Active_CaseLoad_Transfer.Controllers
             request.AllProgramsSelected = allPrograms;
             request.AllLanguagesSelected = allLanguages;
 
-            //var programFilter = request.ProgramTypes?.ToArray() ?? Array.Empty<string>();
-            //var languageFilter = request.LanguageId?.ToArray() ?? Array.Empty<int>();
-
             var programFilter = new HashSet<string>(request.ProgramTypes);
             var languageFilter = new HashSet<int>(request.LanguageId);
-
 
             var matchingIds = await (from cp in _context.CasePrograms
                                      join cps in _context.CaseProgramStatuses on cp.CaseProgramId equals cps.CaseProgramId
@@ -86,37 +86,20 @@ namespace Counselor_Active_CaseLoad_Transfer.Controllers
                                            //&& (allLanguages || languageFilter.Contains(cl.LanguageId))
                                      select cp.CaseProgramId).Distinct().ToListAsync();
 
-
-            //string sql = _context.CasePrograms
-            //    .Where(cp => matchingIds.Contains(cp.CaseProgramId))
-            //    .ToQueryString();
-            //Console.WriteLine(sql);
-
-
-            var allCasePrograms = await _context.CasePrograms.ToListAsync();
-            var toUpdate = allCasePrograms
+            var toUpdate = await _context.CasePrograms
                 .Where(cp => matchingIds.Contains(cp.CaseProgramId))
-                .ToList();
+                .ToListAsync();
 
-
-
-            foreach (var cp in toUpdate)
-                cp.CounselorId = request.CounselorOut;
-
+            toUpdate.ForEach(cp => cp.CounselorId = request.CounselorOut);
             await _context.SaveChangesAsync();
 
             var counselorNames = await _contextUsers.VwProfileProperties
+                .AsNoTracking()
                 .Where(x => x.UserId == request.CounselorIn || x.UserId == request.CounselorOut)
                 .ToDictionaryAsync(x => x.UserId, x => (x.FirstName + " " + x.LastName).ToUpper());
 
-            ViewBag.CounselorInName = counselorNames.ContainsKey(request.CounselorIn)
-                ? counselorNames[request.CounselorIn]
-                : request.CounselorIn.ToString();
-
-            ViewBag.CounselorOutName = counselorNames.ContainsKey(request.CounselorOut)
-                ? counselorNames[request.CounselorOut]
-                : request.CounselorOut.ToString();
-
+            ViewBag.CounselorInName = counselorNames.GetValueOrDefault(request.CounselorIn, request.CounselorIn.ToString());
+            ViewBag.CounselorOutName = counselorNames.GetValueOrDefault(request.CounselorOut, request.CounselorOut.ToString());
             ViewBag.ProgramSummary = allPrograms ? "All Programs" : string.Join(", ", request.ProgramTypes);
             ViewBag.LanguageSummary = allLanguages ? "All Languages" : string.Join(", ", request.LanguageId);
             ViewBag.Message = $"Updated {toUpdate.Count} records.";
