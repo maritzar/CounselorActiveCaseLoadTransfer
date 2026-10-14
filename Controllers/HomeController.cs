@@ -22,8 +22,8 @@ namespace Counselor_Active_CaseLoad_Transfer.Controllers
       
         public async Task<IActionResult> Index()
         {
-var user = await _graphServiceClient.Me.Request().GetAsync();
-ViewData["GraphApiResult"] = user.DisplayName;
+        var user = await _graphServiceClient.Me.Request().GetAsync();
+        ViewData["GraphApiResult"] = user.DisplayName;
             return View();
         }
 
